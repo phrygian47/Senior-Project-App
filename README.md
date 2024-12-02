@@ -143,3 +143,4 @@ Components in React Native need a default export, this is what is exported to as
 # Video Walkthrough
 
 A short walkthrough of the code and functionality is found [here](insert YouTube link)
+# Automated-Home-Control-System
