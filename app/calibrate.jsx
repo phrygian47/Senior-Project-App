@@ -3,7 +3,7 @@ import { View, Text, Button, StyleSheet, Pressable } from "react-native";
 import { ControlContext } from "./contexts/ControlContext";
 import { useMQTT } from "./contexts/MQTTContext";
 
-export default function (CalibrateScreen) {
+export default function CalibrateScreen() {
   const [complete, setComplete] = React.useState(false);
   const [currStep, setCurrStep] = React.useState(1);
   const [dialPosition, setDialPosition] = React.useState(0);

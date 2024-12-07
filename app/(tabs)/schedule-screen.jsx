@@ -39,8 +39,8 @@ export default function ScheduleScreen() {
   const [mode2, setMode2] = useState("Off");
 
   const [events, setEvents] = useState([
-    { date: "12/4/2024" },
-    { date: "12/5/2024" },
+    { date: "12/4/2024", time: "12:00pm", mode: "ON" },
+    { date: "12/5/2024", time: "12:00pm", mode: "OFF" },
   ]);
 
   const handleConfirmTime1 = (date) => {
@@ -51,6 +51,20 @@ export default function ScheduleScreen() {
 
   const isEventScheduled = (date) => {
     found = events.some((event) => event.date === date);
+    return found;
+  };
+
+  const isTimeScheduled = (time) => {
+    const inputHour = time.length === 7 ? "0" + time[0] : time.substring(0, 2);
+    const inputMeridiem = time.slice(-2).toLowerCase(); // converts "AM" or "PM" to "am" or "pm"
+    const found = events.some((event) => {
+      const eventHour =
+        event.time.length === 7
+          ? "0" + event.time[0]
+          : event.time.substring(0, 2);
+      const eventMeridiem = event.time.slice(-2).toLowerCase();
+      return eventHour === inputHour && inputMeridiem === eventMeridiem;
+    });
     return found;
   };
 
@@ -253,7 +267,14 @@ export default function ScheduleScreen() {
                           </Text>
                           {isEventScheduled(
                             item.date.toLocaleDateString("en-US")
-                          ) && <View style={styles.redDot}></View>}
+                          ) && (
+                            <View
+                              style={[
+                                styles.redDot,
+                                { marginTop: 0, marginBottom: 0 },
+                              ]}
+                            ></View>
+                          )}
                         </View>
                       </TouchableWithoutFeedback>
                     );
@@ -452,6 +473,10 @@ export default function ScheduleScreen() {
                     </View>
                   </Modal>
                   {testTimes.map((item) => {
+                    const hasEvent =
+                      isTimeScheduled(item.hour) &&
+                      isEventScheduled(value.toLocaleDateString("en-US"));
+
                     return (
                       <TouchableOpacity
                         key={item.id}
@@ -478,18 +503,23 @@ export default function ScheduleScreen() {
                         <View
                           style={{ flexDirection: "row", alignItems: "center" }}
                         >
-                          <View>
-                            <Text style={styles.schedulerContent}>
-                              {item.hour}
-                            </Text>
-                          </View>
                           <View
                             style={{
-                              flex: 1,
-                              height: 1,
-                              backgroundColor: "black",
+                              flexDirection: "column",
+                              minWidth: 90,
+                              maxWidth: 150,
                             }}
-                          />
+                          >
+                            <View>
+                              {hasEvent && (
+                                <View style={styles.greenDot}></View>
+                              )}
+                              <Text style={styles.schedulerContent}>
+                                {item.hour}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={styles.horizontalLine} />
                         </View>
                       </TouchableOpacity>
                     );
@@ -726,5 +756,31 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     backgroundColor: "red",
+    alignSelf: "flex-start",
+    marginTop: -5,
+    marginBottom: -5,
+  },
+  yellowDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "yellow",
+    alignSelf: "center",
+    marginTop: -5,
+    marginBottom: -5,
+  },
+  greenDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "green",
+    alignSelf: "flex-end",
+    marginTop: -5,
+    marginBottom: -5,
+  },
+  horizontalLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "black",
   },
 });

@@ -28,7 +28,7 @@ export default function RootLayout() {
                 headerTransparent: true,
                 headerShown: true,
                 headerTitle: "My Home",
-                headerBackButtonDisplayMode: "minimal",
+                headerBackTitleVisible: false,
               }}
             />
             <Stack.Screen name="connect" />
@@ -45,7 +45,7 @@ export default function RootLayout() {
                 headerShown: true,
                 headerTitle: "Water Heater Control",
                 headerTintColor: "black",
-                headerBackButtonDisplayMode: "minimal",
+                headerBackTitleVisible: false,
                 headerTitleStyle: {
                   color: "#000",
                 },

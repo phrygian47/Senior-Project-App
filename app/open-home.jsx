@@ -54,7 +54,7 @@ export default function openHome({ route, navigation }) {
                   <IconButton
                     imageStyle={{ height: 100, width: 100 }}
                     source={imageSource} // Use the mapped image source
-                    onPress={() => router.push("/calibrate")}
+                    onPress={() => router.push("/wh-dial-control")}
                   />
                 ) : null}
               </View>

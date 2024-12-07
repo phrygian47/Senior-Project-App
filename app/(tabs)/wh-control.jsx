@@ -12,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ControlContext } from "../contexts/ControlContext";
 import { useMQTT } from "../contexts/MQTTContext";
+import BatteryIndicator from "../../components/BatteryIndicator";
 
 export default function WhControl() {
   const {
@@ -28,14 +29,22 @@ export default function WhControl() {
   const { controlValue } = React.useContext(ControlContext);
 
   const [status, setStatus] = React.useState(null);
-  React.useEffect(() => {
-    publish("connect", "Connected");
-    getLastMessage("status", updateStatus);
+  const [battery, setBattery] = React.useState(85);
 
+  React.useEffect(() => {
+    publish("/control", "send-status");
+    getLastMessage("/status", updateStatus);
+
+    publish("/control", "send-battery");
+    getLastMessage("/battery", updateBattery);
     return () => {
       unsubscribe("status");
     };
   }, []);
+
+  const updateBattery = (batteryLevel) => {
+    setBattery(batteryLevel);
+  };
 
   const updateStatus = (lastStatus) => {
     setStatus(lastStatus);
@@ -43,7 +52,7 @@ export default function WhControl() {
 
   const onOffPress = () => {
     if (controlValue.pos1 != null) {
-      publish("wh-control", controlValue.pos1.toString());
+      publish("/wh-control", controlValue.pos1.toString());
     } else {
       console.log("Setup Incomplete");
     }
@@ -51,7 +60,7 @@ export default function WhControl() {
 
   const onLowPress = () => {
     if (controlValue.pos2 != null) {
-      publish("wh-control", controlValue.pos2.toString());
+      publish("/wh-control", controlValue.pos2.toString());
     } else {
       console.log("Setup Incomplete");
     }
@@ -59,7 +68,7 @@ export default function WhControl() {
 
   const onHighPress = () => {
     if (controlValue.pos3 != null) {
-      publish("wh-control", controlValue.pos3.toString());
+      publish("/wh-control", controlValue.pos3.toString());
     } else {
       console.log("Setup Incomplete");
     }
@@ -72,6 +81,7 @@ export default function WhControl() {
         dither={true}
         style={styles.background}
       />
+      <BatteryIndicator batteryLevel={battery} />
       <View style={styles.status}>
         <Text style={styles.statusText}>{status}</Text>
       </View>
