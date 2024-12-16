@@ -142,5 +142,5 @@ Components in React Native need a default export, this is what is exported to as
 
 # Video Walkthrough
 
-A short walkthrough of the code and functionality is found [here](insert YouTube link)
+A short walkthrough of the code and functionality is found [here](https://youtu.be/q4O4khsZwGI)
 # Automated-Home-Control-System
