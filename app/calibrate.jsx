@@ -2,13 +2,14 @@ import * as React from "react";
 import { View, Text, Button, StyleSheet, Pressable } from "react-native";
 import { ControlContext } from "./contexts/ControlContext";
 import { useMQTT } from "./contexts/MQTTContext";
+import  MultiSlider from "@ptomasroos/react-native-multi-slider";
+
 
 export default function CalibrateScreen() {
   const [complete, setComplete] = React.useState(false);
   const [currStep, setCurrStep] = React.useState(1);
-  const [dialPosition, setDialPosition] = React.useState(0);
-  const [isPositionConfirmed, setIsPositionConfirmed] = React.useState(false);
-  const { controlValue, setControlValue } = React.useContext(ControlContext);
+  const [start, setStart] = React.useState(false);
+  const [sliderValue, setSliderValue] = React.useState([0]);
   const {
     isConnected,
     lastMessage,
@@ -19,80 +20,52 @@ export default function CalibrateScreen() {
     unsubscribe,
   } = useMQTT();
 
-  React.useEffect(() => {
-    subscribeToDialPosition("wh-control", dialPositionUpdateHandler);
-
-    return () => {
-      unsubscribe("wh-control");
-    };
-  }, []);
-
-  React.useEffect(() => {
-    console.log("Updated calibrated positions:", controlValue);
-  }, [controlValue]);
-
-  const dialPositionUpdateHandler = (position) => {
-    setDialPosition(position);
-    setIsPositionConfirmed(true);
+  const onValuesChange = (values) => {
+    setSliderValue(values);
+    console.log('Current value:', values[0]/100);
+    publish("/calibration-move", (values[0]).toString());
   };
-
-  const onConfirmHandler = () => {
-    if (isPositionConfirmed) {
-      setControlValue((prevPos) => ({
-        ...prevPos,
-        [`pos${currStep}`]: dialPosition,
-      }));
-      setIsPositionConfirmed(false);
-
-      if (currStep < 3) {
-        setCurrStep(currStep + 1);
-      } else {
-        console.log("Setup complete with positions: ", controlValue);
-        setComplete(true);
-      }
-    } else {
-      console.warn("Awating dial position confirmation...");
-    }
-  };
-
-  const resetHandler = () => {
-    setControlValue([
-      {
-        id: "off",
-        value: null,
-      },
-      {
-        id: "low",
-        value: null,
-      },
-      {
-        id: "high",
-        value: null,
-      },
-    ]);
+  
+  const handleReset = () => {
+    publish("/command", "reset");
     setCurrStep(1);
     setComplete(false);
-    setIsPositionConfirmed(false);
-  };
+    setStart(false);
+  }
+
+  React.useEffect(() => {
+    publish("/command", "start-calibration");
+  }, []);
 
   return (
     <View style={styles.container}>
+      {start && !complete && (<MultiSlider
+        values={[sliderValue[0]]}
+        onValuesChangeFinish={onValuesChange}
+        min={0}
+        max={100}
+        step={1}
+        enabledOne
+        sliderLength={250}
+      />)}
       <Text style={styles.headerText}>
         {complete ? "Set Up Complete!" : "Setup Water Heater Controls"}
       </Text>
-      <Text style={styles.instructionText}>
+      {start && (      <Text style={styles.instructionText}>
         {!complete && (
           <>
-            Turn the physical dial to the
+            Move the slider until the physical dial is on the
             {currStep === 1
               ? " Vacation "
               : currStep === 2
               ? " Low "
-              : " High "}
+              : currStep === 3
+              ? " High "
+              : " Very High "}
             position.
           </>
         )}
-      </Text>
+      </Text>)}
       <View style={styles.progressContainer}>
         <View
           style={[styles.stepIndicator, currStep >= 1 && styles.activeStep]}
@@ -103,18 +76,28 @@ export default function CalibrateScreen() {
         <View
           style={[styles.stepIndicator, currStep >= 3 && styles.activeStep]}
         />
+                <View
+          style={[styles.stepIndicator, currStep >= 4 && styles.activeStep]}
+        />
       </View>
       <Pressable
-        style={[
-          styles.confirmButton,
-          !isPositionConfirmed && styles.disabledButton,
-        ]}
-        onPress={onConfirmHandler}
-        disabled={!isPositionConfirmed}
+        style={[styles.confirmButton, complete && styles.disabledButton]}
+        onPress={() => {
+          if(start === false){
+            setStart(true);
+          }else{
+            publish("/command", "confirm");
+            setCurrStep(currStep + 1);
+            if (currStep >= 4){
+              setComplete(true);
+            } 
+          }
+        }
+      }
       >
-        <Text style={styles.buttonText}>Confirm Position</Text>
+        <Text style={styles.buttonText}>{start === false ? "Start Calibration" : "Confirm Position"}</Text>
       </Pressable>
-      <Pressable style={styles.resetButton} onPress={resetHandler}>
+      <Pressable style={[styles.resetButton, !start && styles.disabledButton]} onPress={handleReset}>
         <Text style={styles.buttonText}>Reset Setup</Text>
       </Pressable>
     </View>

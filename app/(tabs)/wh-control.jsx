@@ -24,6 +24,7 @@ export default function WhControl() {
     subscribeToDialPosition,
     getLastMessage,
     unsubscribe,
+    subscribeWithCallback
   } = useMQTT();
 
   const { controlValue } = React.useContext(ControlContext);
@@ -31,44 +32,85 @@ export default function WhControl() {
   const [status, setStatus] = React.useState(null);
   const [battery, setBattery] = React.useState(85);
 
-  React.useEffect(() => {
-    publish("/control", "send-status");
-    getLastMessage("/status", updateStatus);
+// Separate effect for status subscription
+React.useEffect(() => {
+  // Define status message handler
+  const handleStatusMessage = (message) => {
+    const lastStatus = message.payloadString;
+    const newStatus = (lastStatus === "Low" ? "Low" : 
+    lastStatus === "High" ? "High" : 
+    lastStatus === "VeryHigh" ? "Very High" :
+    "Vacation");
+    console.log(newStatus)
+    setStatus(newStatus);
+  };
 
-    publish("/control", "send-battery");
-    getLastMessage("/battery", updateBattery);
-    return () => {
-      unsubscribe("status");
-    };
-  }, []);
+  // Subscribe to status topic with its handler
+  subscribeWithCallback("/status", handleStatusMessage);
+  // Initial status request
+  publish("/command", "send-status");
 
-  const updateBattery = (batteryLevel) => {
+  return () => {
+    unsubscribe("/status");
+  };
+}, []);
+
+// Separate effect for battery subscription
+React.useEffect(() => {
+  // Define battery message handler
+  const handleBatteryMessage = (message) => {
+    const batteryLevel = parseInt(message.payloadString);
+    setBattery(batteryLevel);
+  };
+
+  // Subscribe to battery topic with its handler
+  subscribeWithCallback("/battery-level", handleBatteryMessage);
+  // Initial battery request
+  publish("/command", "send-battery");
+
+  return () => {
+    unsubscribe("/battery-level");
+  };
+}, []);
+
+/*  const updateBattery = (batteryLevel) => {
     setBattery(batteryLevel);
   };
 
   const updateStatus = (lastStatus) => {
-    setStatus(lastStatus);
-  };
+    lastStatus === 1 ? setStatus("Low") : lastStatus === 2 ? setStatus("High") : setStatus("Vacation");
+  };*/
 
+
+  // ATTENTION
+  // MAKE CHANGES TO CONTROL VALUE POS DONT LEAVE IT LIKE THIS
   const onOffPress = () => {
-    if (controlValue.pos1 != null) {
-      publish("/wh-control", controlValue.pos1.toString());
+    if (controlValue.pos1 == null) {
+      publish("/wh-control-apptohub", "VACATION");
     } else {
       console.log("Setup Incomplete");
     }
   };
 
   const onLowPress = () => {
-    if (controlValue.pos2 != null) {
-      publish("/wh-control", controlValue.pos2.toString());
+    if (controlValue.pos2 == null) {
+      publish("/wh-control-apptohub", "LOW");
     } else {
       console.log("Setup Incomplete");
     }
   };
 
   const onHighPress = () => {
-    if (controlValue.pos3 != null) {
-      publish("/wh-control", controlValue.pos3.toString());
+    if (controlValue.pos3 == null) {
+      publish("/wh-control-apptohub", "HIGH");
+    } else {
+      console.log("Setup Incomplete");
+    }
+  };
+
+  const onVeryHighPress = () => {
+    if (controlValue.pos3 == null) {
+      publish("/wh-control-apptohub", "VERY-HIGH");
     } else {
       console.log("Setup Incomplete");
     }
@@ -88,13 +130,16 @@ export default function WhControl() {
       <SafeAreaView>
         <View style={styles.content}>
           <TouchableOpacity onPress={onOffPress} style={styles.button}>
-            <Text style={styles.buttonText}>Off</Text>
+            <Text style={styles.buttonText}>Vacation</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={onLowPress} style={styles.button}>
             <Text style={styles.buttonText}>Low</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={onHighPress} style={styles.button}>
             <Text style={styles.buttonText}>High</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onVeryHighPress} style={styles.button}>
+            <Text style={styles.buttonText}>Very High</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

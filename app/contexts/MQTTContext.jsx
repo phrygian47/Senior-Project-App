@@ -12,8 +12,8 @@ export const MQTTProvider = ({ children }) => {
     "wss://37e8d6595c8a470bb699134f3cddafc3.s1.eu.hivemq.cloud:8884/mqtt"; //MQTT broker URL. If changing brokers update here
   const options = {
     clientId: "ClientId-" + Math.random().toString(16).substring(2, 8), //Random client ID for broker
-    userName: "Test",
-    password: "password",
+    userName: "app-device",
+    password: "Password1",
   };
 
   // Callback whenever new MQTT emssage is received.
@@ -85,6 +85,30 @@ export const MQTTProvider = ({ children }) => {
     }
   };
 
+  const subscribeWithCallback = (topic, callback) => {
+    if (MqttService.mqttClient && MqttService.mqttClient.isConnected()) {
+      MqttService.mqttClient.subscribe(topic);
+      
+      // Store original message handler
+      const originalHandler = MqttService.mqttClient.onMessageArrived;
+      
+      // Create new message handler that checks topic
+      MqttService.mqttClient.onMessageArrived = (message) => {
+        if (message.destinationName === topic) {
+          callback(message);
+        }
+        // Call original handler if it exists
+        if (originalHandler) {
+          originalHandler(message);
+        }
+      };
+      
+      console.log(`Subscribed to topic: ${topic}`);
+    } else {
+      console.error("MQTT client not connected");
+    }
+  };
+
   // Disconnect from broker
   const disconnect = () => {
     MqttService.disconnect();
@@ -105,6 +129,7 @@ export const MQTTProvider = ({ children }) => {
     subscribeToDialPosition,
     getLastMessage,
     unsubscribe,
+    subscribeWithCallback
   };
 
   return (

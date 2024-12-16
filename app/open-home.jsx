@@ -54,7 +54,7 @@ export default function openHome({ route, navigation }) {
                   <IconButton
                     imageStyle={{ height: 100, width: 100 }}
                     source={imageSource} // Use the mapped image source
-                    onPress={() => router.push("/wh-dial-control")}
+                    onPress={() => router.push("/calibrate")}
                   />
                 ) : null}
               </View>
@@ -75,7 +75,7 @@ export default function openHome({ route, navigation }) {
               flex: 1,
               justifyContent: "center",
               alignItems: "center",
-              backgroundColor: "#00000080",
+              backgroundColor: "#333333",
             }}
           >
             <Text
@@ -105,6 +105,25 @@ export default function openHome({ route, navigation }) {
             onPressFunction={() => setModalVisible(!modalVisible)}
           />
         </View>
+        <View style={styles.button}>
+        <Pressable style={{
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    backgroundColor: "#fff",
+    width: 200,
+    marginVertical: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    borderWidth: 2,
+
+  }}><Text style={{color: "#000",
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    fontSize: 16,
+    textAlign: "center",}}>Remove Device</Text></Pressable></View>
       </SafeAreaView>
     </View>
   );

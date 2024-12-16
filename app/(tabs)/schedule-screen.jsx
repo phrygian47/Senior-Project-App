@@ -18,6 +18,7 @@ import Swiper from "react-native-swiper";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
+import { useMQTT } from "../contexts/MQTTContext";
 
 const { width } = Dimensions.get("screen");
 
@@ -38,6 +39,8 @@ export default function ScheduleScreen() {
   const [mode1, setMode1] = useState("Off");
   const [mode2, setMode2] = useState("Off");
 
+  const {publish} = useMQTT();
+
   const [events, setEvents] = useState([
     { date: "12/4/2024", time: "12:00pm", mode: "ON" },
     { date: "12/5/2024", time: "12:00pm", mode: "OFF" },
@@ -55,18 +58,36 @@ export default function ScheduleScreen() {
   };
 
   const isTimeScheduled = (time) => {
-    const inputHour = time.length === 7 ? "0" + time[0] : time.substring(0, 2);
-    const inputMeridiem = time.slice(-2).toLowerCase(); // converts "AM" or "PM" to "am" or "pm"
+    // Normalize the input time format
+    const normalizeTime = (t) => {
+        // Convert "8:00 AM" format to "08:00 AM" format
+        const [hourMin, meridiem] = t.split(' ');
+        const [hour, min] = hourMin.split(':');
+        const paddedHour = hour.length === 1 ? `0${hour}` : hour;
+        return `${paddedHour}:${min} ${meridiem}`;
+    };
+
+    const normalizedInputTime = normalizeTime(time);
+    
     const found = events.some((event) => {
-      const eventHour =
-        event.time.length === 7
-          ? "0" + event.time[0]
-          : event.time.substring(0, 2);
-      const eventMeridiem = event.time.slice(-2).toLowerCase();
-      return eventHour === inputHour && inputMeridiem === eventMeridiem;
+        const normalizedEventTime = normalizeTime(event.time);
+        return normalizedEventTime === normalizedInputTime && 
+               event.date === value.toLocaleDateString("en-US");
     });
+    
     return found;
-  };
+};
+
+const getEventMode = (date, time) => {
+  // Convert date to match events array date format
+  const formattedDate = moment(new Date(date)).format('M/D/YYYY');
+  
+  const event = events.find(event => 
+      event.date === formattedDate && 
+      event.time === time
+  );
+  return event ? event.mode : null;
+};
 
   const handleConfirmDate1 = (date) => {
     options = { month: "short", day: "numeric", year: "numeric" };
@@ -120,12 +141,16 @@ export default function ScheduleScreen() {
 
   const addEventHandler = () => {
     const formattedDate1 = convertToDate(selectedDay1);
-    console.log(selectedTime1);
+    const newEvents = [];
     const newEvent = {
       date: formattedDate1,
       time: selectedTime1,
       mode: mode1,
     };
+    newEvents.push(newEvent);
+    publish("new-event/date", newEvent.date);
+    publish("new-event/time", newEvent.time);
+    publish("new-event/mode", newEvent.mode);
     if (checkBox) {
       const formattedDate2 = convertToDate(selectedDay2);
       const newEndEvent = {
@@ -133,9 +158,9 @@ export default function ScheduleScreen() {
         time: selectedTime2,
         mode: mode2,
       };
-      setEvents([...events, newEndEvent]);
+      newEvents.push(newEndEvent);
     }
-    setEvents([...events, newEvent]);
+    setEvents([...events, ...newEvents]);
     setModalVisible(!modalVisible);
   };
 
@@ -270,8 +295,8 @@ export default function ScheduleScreen() {
                           ) && (
                             <View
                               style={[
-                                styles.redDot,
-                                { marginTop: 0, marginBottom: 0 },
+                                styles.greenDot,
+                                { marginTop: 0, marginBottom: 0, alignSelf: "center" },
                               ]}
                             ></View>
                           )}
@@ -375,7 +400,7 @@ export default function ScheduleScreen() {
                           <Pressable
                             onPress={() => triButtonHandler("High")}
                             style={[
-                              styles.triButtonR,
+                              styles.triButtonM,
                               mode1 === "High" && {
                                 backgroundColor: "#FAF3E0",
                                 borderWidth: 1,
@@ -384,6 +409,18 @@ export default function ScheduleScreen() {
                           >
                             <Text style={styles.highButton}>High</Text>
                           </Pressable>
+                          <Pressable
+                                onPress={() => triButtonHandler("Very High")}
+                                style={[
+                                  styles.triButtonR,
+                                  mode1 === "Very High" && {
+                                    backgroundColor: "#FAF3E0",
+                                    borderWidth: 1,
+                                  },
+                                ]}
+                              >
+                              <Text style={styles.highButton}> Very High</Text>
+                            </Pressable>
                         </View>
                         <View style={styles.checkBoxContainer}>
                           <BouncyCheckbox
@@ -457,7 +494,7 @@ export default function ScheduleScreen() {
                               <Pressable
                                 onPress={() => triButtonHandler2("High")}
                                 style={[
-                                  styles.triButtonR,
+                                  styles.triButtonM,
                                   mode2 === "High" && {
                                     backgroundColor: "#FAF3E0",
                                     borderWidth: 1,
@@ -465,6 +502,18 @@ export default function ScheduleScreen() {
                                 ]}
                               >
                                 <Text style={styles.highButton}>High</Text>
+                              </Pressable>
+                              <Pressable
+                                onPress={() => triButtonHandler2("Very High")}
+                                style={[
+                                  styles.triButtonR,
+                                  mode2 === "Very High" && {
+                                    backgroundColor: "#FAF3E0",
+                                    borderWidth: 1,
+                                  },
+                                ]}
+                              >
+                                <Text style={styles.highButton}> Very High</Text>
                               </Pressable>
                             </View>
                           </View>
@@ -476,7 +525,7 @@ export default function ScheduleScreen() {
                     const hasEvent =
                       isTimeScheduled(item.hour) &&
                       isEventScheduled(value.toLocaleDateString("en-US"));
-
+                    const mode = getEventMode(value.toDateString("en-US"), item.hour);
                     return (
                       <TouchableOpacity
                         key={item.id}
@@ -511,15 +560,18 @@ export default function ScheduleScreen() {
                             }}
                           >
                             <View>
-                              {hasEvent && (
-                                <View style={styles.greenDot}></View>
-                              )}
                               <Text style={styles.schedulerContent}>
                                 {item.hour}
                               </Text>
                             </View>
                           </View>
-                          <View style={styles.horizontalLine} />
+                          {hasEvent && (
+                                <View style={[styles.eventIndicator, mode === "Off" ? 
+                                  styles.eventOff: mode === "Low" ? 
+                                  styles.eventLow : mode === "High" ? 
+                                  styles.eventHigh : styles.eventVeryHigh]}><Text style={styles.eventText}>{mode}</Text></View>
+                              )}
+                              <View style={styles.horizontalLine}/>
                         </View>
                       </TouchableOpacity>
                     );
@@ -760,15 +812,6 @@ const styles = StyleSheet.create({
     marginTop: -5,
     marginBottom: -5,
   },
-  yellowDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "yellow",
-    alignSelf: "center",
-    marginTop: -5,
-    marginBottom: -5,
-  },
   greenDot: {
     width: 10,
     height: 10,
@@ -783,4 +826,37 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "black",
   },
+  eventOff: {
+    backgroundColor: "#626262",
+    borderColor: "#FAF3E0",
+},
+eventLow: {
+    backgroundColor: "#00cf26",
+    borderColor: "#FAF3E0",
+},
+eventHigh: {
+    backgroundColor: "#cfc100",
+    borderColor: "#FAF3E0",
+},
+eventVeryHigh: {
+    backgroundColor: "#cf0000",
+    borderColor: "#FAF3E0",
+},
+eventIndicator: {
+  borderWidth: 2,
+  padding: 5,
+  paddingLeft: 15,
+  paddingRight: 15,
+  backgroundColor: "#626262",
+  borderRadius: 8,
+  marginLeft: 10,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 10 },
+  shadowRadius: 8,
+  elevation: 5,
+},
+eventText: {
+  fontSize: 16,
+  color: "black",
+},
 });
