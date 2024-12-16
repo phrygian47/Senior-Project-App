@@ -14,9 +14,10 @@ export default function openHome({ route, navigation }) {
     "toilet.png": require("../assets/images/toilet.png"),
     // Add other images as necessary
   };
-  const { devices, setDevices } = React.useContext(DeviceContext);
-  const [modalVisible, setModalVisible] = React.useState(false);
+  const { devices, setDevices } = React.useContext(DeviceContext); // Global device context
+  const [modalVisible, setModalVisible] = React.useState(false); // Modal bool
   const router = useRouter();
+  // Add new device to device context for page rendering.
   const onAddDeviceHandler = (id) => {
     const nextDevices = devices.map((device) => {
       if (device.visible === true || device.id != id) {
