@@ -1,6 +1,6 @@
 # Welcome to the Automated Home Control App 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app). If questions arise concerning routing please view the documentation and FAQs on the expo app website
+This project documentation was written so that the sponsor of this project can learn, edit, and change aspects of the project.
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app). If questions arise concerning routing please view the documentation and FAQs on the expo app website, or reach out to me at robert.elliott2925@gmail.com
 
 ## Get started
 
